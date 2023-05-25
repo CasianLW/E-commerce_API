@@ -17,11 +17,23 @@ model User {
   email String  @unique
   name  String
   password String
+  token String
+
   avater String?
-  isAdmin Boolean @default(false)
-  isSubscriptionActive Boolean?
+  phone String
+  city String
+  Location String
+  zip String
+
+  stripeCustomerId String
+  purchase Purchase[]
+
+
+
   subscriptionId Int?
   subscription Subscription? @relation(fields:[subscriptionId], references: [id])
+
+  isAdmin Boolean @default(false)
   
 }
 model Subscription {
@@ -56,4 +68,29 @@ model Event {
 }
 
 
+model Purchase{
+  id        Int     @id @default(autoincrement())
+  price Float
+  tokenSaas String
+  userId Int
+  user User  @relation(fields:[userId], references: [id])
 
+  stripeUserId String
+  status PurchaseStatus
+  invoiceUrl String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
+
+enum PurchaseStatus {
+  paid
+  pending
+  shipped
+  delivered
+  returned
+
+  cancelled
+  active
+}
