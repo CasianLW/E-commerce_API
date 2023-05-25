@@ -1,27 +1,59 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// npx prisma migrate dev --name init
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
-  name  String?
-  posts Post[]
+  name  String
+  password String
+  avater String?
+  isAdmin Boolean @default(false)
+  isSubscriptionActive Boolean?
+  subscriptionId Int?
+  subscription Subscription? @relation(fields:[subscriptionId], references: [id])
+  
+}
+model Subscription {
+  id    Int     @id @default(autoincrement())
+  name  String
+  description  String
+  image String
+  interval SubscriptionInterval @default(month)
+  intervalCount Int @default(1)
+  clients User[]
+  price Float
+  clientId Int
 }
 
-model Post {
+enum SubscriptionInterval {
+  day
+  week
+  month
+  year
+}
+
+model Event {
   id        Int     @id @default(autoincrement())
   title     String
-  content   String?
+  content   String @db.VarChar(255) 
+  image String?
   published Boolean @default(false)
-  author    User    @relation(fields: [authorId], references: [id])
-  authorId  Int
+  author  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
 }
+
+
+
