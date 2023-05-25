@@ -1,7 +1,7 @@
 const express = require("express");
 require("dotenv").config();
 const port = process.env.VITE_APP_PORT || 3000;
-const fs = require("fs");
+// const fs = require("fs");
 const compression = require("compression");
 const cors = require("cors");
 const app = express();
@@ -10,10 +10,10 @@ const prisma = new PrismaClient();
 const bodyParser = require("body-parser");
 const https = require("https");
 
-const sslOptions = {
-  key: fs.readFileSync("./server/localhost-key.pem"),
-  cert: fs.readFileSync("./server/localhost.pem"),
-};
+// const sslOptions = {
+//   key: fs.readFileSync("./server/localhost-key.pem"),
+//   cert: fs.readFileSync("./server/localhost.pem"),
+// };
 
 app.use(compression());
 app.use(cors());
@@ -23,17 +23,17 @@ app.use(async (req, res, next) => {
 });
 
 const AuthRouter = require("./router/AuthRouter").router;
-const AdminRouter = require("./router/AdminRouter").router;
+// const AdminRouter = require("./router/AdminRouter").router;
 const StoreRouter = require("./router/StoreRouter").router;
-const ProfileRouter = require("./router/ProfileRouter").router;
+// const ProfileRouter = require("./router/ProfileRouter").router;
 
 app.use(bodyParser.json());
 // app.use('/api', (req, res) => {
 //     res.send('Hello to Yuniq store Api !')
 // })
 app.use("/api/auth", AuthRouter);
-app.use("/api/admin", AdminRouter);
-app.use("/api/profile", ProfileRouter);
+// app.use("/api/admin", AdminRouter);
+// app.use("/api/profile", ProfileRouter);
 app.use("/api/store", StoreRouter);
 prisma
   .$connect()
