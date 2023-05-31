@@ -98,10 +98,6 @@ module.exports = {
   register: async (req, res) => {
     const { name, password, email, phone, isAdmin, zip, city, location } =
       req.body;
-    console.log("validation worked");
-    console.log("validation worked");
-    console.log("validation worked");
-    console.log("validation worked");
 
     try {
       const existingUser = await prisma.user.findFirst({
@@ -177,96 +173,72 @@ module.exports = {
     }
   },
 
-  // login: async (req, res) => {
-  //   try {
-  //     const { name, password } = req.body;
-  //     // console.log(req.body);
+  login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
 
-  //     if (!name) throw new Error("name manquant");
-  //     else if (!password) throw new Error("mdp manquant");
-  //     else {
-  //       const db = mongoose.connection;
-  //       const checkUser = await db.collections.users.findOne({
-  //         name: `${name}`,
-  //       });
-  //       const checkTempUser = await db.collections.temporary_users.findOne({
-  //         name: `${name}`,
-  //       });
-  //       if (checkUser) {
-  //         if (await bcrypt.compare(password, checkUser["password"])) {
-  //           //i
-  //           // const JWTstatus = jwt.verify(token, jwtKey);
-  //           // const isAdmin = checkUser["isAdmin"];
-  //           const { name, isAdmin } = checkUser;
-  //           const token = jwt.sign(
-  //             {
-  //               iat: Math.floor(Date.now() / 1000),
-  //               exp: Math.floor(Date.now() / 1000) + 60 * 60,
-  //               isAdmin,
-  //               name,
-  //             },
-  //             jwtKey
-  //           );
-  //           // const iat = JWTstatus["iat"];
-  //           // const token = jwt.sign({ name, iat, isAdmin }, jwtKey, {
-  //           //   algorithm: "HS256",
-  //           //   expiresIn: jwtExpirySeconds + "s",
-  //           // });
-  //           // verification pour recuperer le iat exp et user
-  //           // cookie non necessaire pour l'instant
-  //           // res.cookie("token", token, { maxAge: jwtExpirySeconds * 1000 });
-  //           // res.end();
-  //           return res.status(201).json({
-  //             message: `Hello ${
-  //               checkUser["name"]
-  //             }, connection reussie ! Votre compte est ${
-  //               checkUser["isAdmin"] ? "ADMINISTRATEUR" : "NORMAL"
-  //             } `,
-  //             token,
-  //             // name: `${JWTstatus["name"]}`,
-  //             // JWT_iat: `${JWTstatus["iat"]}`,
-  //             // JWT_exp: `${JWTstatus["exp"]}`,
-  //           });
-  //         } else {
-  //           throw new Error("mdp incorrect");
-  //         }
-  //       }
-  //       if (checkTempUser) {
-  //         return res.status(500).json({
-  //           error:
-  //             "Votre compte n'est pas encore confirmé, regardez vos mails !",
-  //         });
-  //       } else {
-  //         return res.status(500).json({
-  //           error: "Utilisateur incorrect !",
-  //         });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error(
-  //       "Une erreur a survenue lors de la tentative de connection:",
-  //       error
-  //     );
-  //     let status = 500;
-  //     let message = "Erreur du serveur";
-  //     if (error.message === "name manquant") {
-  //       status = 400;
-  //       message = "Veuillez entrer un name";
-  //     }
-  //     if (error.message === "mdp manquant") {
-  //       status = 400;
-  //       message = "Veuillez entrer un mot de passe !";
-  //     }
-  //     if (error.message === "mdp ou name incorrect") {
-  //       status = 400;
-  //       message = "Mot de passe incorrect !";
-  //     }
+      if (!email) throw new Error("Email missing");
+      if (!password) throw new Error("Password missing");
 
-  //     return res.status(status).json({
-  //       message: `${message}`,
-  //     });
-  //   }
-  // },
+      const existingUser = await prisma.user.findFirst({
+        where: { email: email },
+      });
+
+      if (existingUser) {
+        const isPasswordValid = bcrypt.compareSync(
+          password,
+          existingUser.password
+        );
+        if (!isPasswordValid) throw new Error("Incorrect password");
+
+        const token = jwt.sign(
+          {
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 60 * 60,
+            isAdmin: existingUser.isAdmin,
+            name: existingUser.name,
+          },
+          jwtKey
+        );
+
+        return res.status(200).json({
+          message: `Hello ${
+            existingUser.name
+          }, successfully logged in! Your account is ${
+            existingUser.isAdmin ? "ADMINISTRATOR" : "NORMAL"
+          }`,
+          token,
+        });
+      } else {
+        throw new Error("Invalid user");
+      }
+    } catch (error) {
+      console.error("An error occurred during login: ", error);
+      let status = 500;
+      let message = "Server error";
+      if (error.message === "Email missing") {
+        status = 400;
+        message = "Please enter an email";
+      }
+      if (error.message === "Password missing") {
+        status = 400;
+        message = "Please enter a password!";
+      }
+      if (
+        error.message === "Incorrect password" ||
+        error.message === "Invalid user"
+      ) {
+        status = 400;
+        message = "Incorrect password or email!";
+      }
+
+      return res.status(status).json({
+        message: `${message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
 
   // getUsers: async (req, res) => {
   //   // const ge = 1;
