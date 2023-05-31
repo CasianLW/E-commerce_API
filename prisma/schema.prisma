@@ -19,16 +19,14 @@ model User {
   password String
   token String
 
-  avater String?
+  avatar String?
   phone String
   city String
-  Location String
+  location String
   zip String
 
   stripeCustomerId String
   purchase Purchase[]
-
-
 
   subscriptionId Int?
   subscription Subscription? @relation(fields:[subscriptionId], references: [id])
