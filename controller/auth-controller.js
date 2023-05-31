@@ -2,7 +2,7 @@
 const bcrypt = require("bcrypt");
 // const User = require("../model/user");
 // const UserTemp = require("../model/userTemp");
-// const SibApiV3Sdk = require("sib-api-v3-sdk");
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 // const { randomFillSync } = require("crypto");
 // const mongoose = require("mongoose");
 // var ObjectId = require("mongoose").Types.ObjectId;
@@ -37,8 +37,7 @@ main()
 
 module.exports = {
   registerValidation: async (req, res, next) => {
-    const { email, name, password, phone, isAdmin, city, location, zip } =
-      req.body;
+    const { email, name, password, phone, city, location, zip } = req.body;
     const patternMail =
       /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     // const patternPhone = /^33\d{9}$/;
@@ -84,7 +83,7 @@ module.exports = {
       res.name = name;
       res.password = bcrypt.hashSync(password, 5, salt);
       res.phone = phone;
-      res.isAdmin = isAdmin;
+      // res.isAdmin = isAdmin;
       res.zip = zip;
       res.city = city;
       res.location = location;
@@ -96,8 +95,7 @@ module.exports = {
   },
 
   register: async (req, res) => {
-    const { name, password, email, phone, isAdmin, zip, city, location } =
-      req.body;
+    const { name, password, email, phone, zip, city, location } = req.body;
 
     try {
       const existingUser = await prisma.user.findFirst({
@@ -123,8 +121,8 @@ module.exports = {
           {
             iat: Math.floor(Date.now() / 1000),
             exp: Math.floor(Date.now() / 1000) + 60 * 60,
-            isAdmin,
-            name,
+            isAdmin: false,
+            name: name,
           },
           jwtKey
         );
