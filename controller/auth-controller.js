@@ -172,7 +172,45 @@ module.exports = {
               },
             ],
             subject: "Registration Confirmation",
-            htmlContent: `<!DOCTYPE html><html><body><h1>Hello ${name}</h1> <br><p>Your account has been created successfully!</p> <br><p>Please login to access your account.</p> </body></html>`,
+            htmlContent: `
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <style>
+                    .container {
+                      background-color: #000;
+                      color: #fff;
+                      font-family: Arial, sans-serif;
+                      padding: 20px;
+                      border-radius: 20px;
+                    }
+                  
+                    .header {
+                      background-color: #7458EA;
+                      padding: 20px;
+                      border-radius: 20px;
+                    }
+                  
+                    .message {
+                      background-color: #D3FE57;
+                      padding: 20px;
+                      margin-top: 20px;
+                      border-radius: 20px;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="header">
+                      <h1>Hello ${req.body.name}</h1>
+                    </div>
+                    <div class="message">
+                      <p>Votre compte a bien été crée.</p>
+                      <p>Connectez-vous pour modifier les informations              liées à votre compte.</p>
+                    </div>
+                  </div>
+                </body>
+              </html>`,
             params: {
               greeting: "This is the default greeting",
               headline: "This is the default headline",
