@@ -12,7 +12,7 @@ exports.router = (() => {
 
   authRouter.route("/register/").post(registerValidation, register);
   // authRouter.route("/register/confirm/:token").get(confirmAccount);
-  // authRouter.route("/login/").post(login);
+  authRouter.route("/login/").post(login);
 
   authRouter.route("/home");
   // authRouter.route("/admin/users/:token").get(getUsers);
