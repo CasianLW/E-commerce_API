@@ -156,6 +156,36 @@ module.exports = {
             token: token,
           },
         });
+        // Now let's send a confirmation email
+        SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
+          process.env.SENDINBLUE_API_KEY;
+        new SibApiV3Sdk.TransactionalEmailsApi()
+          .sendTransacEmail({
+            sender: {
+              email: process.env.SENDING_EMAIL,
+              name: process.env.SENDING_NAME,
+            },
+            to: [
+              {
+                email: email,
+                name: name,
+              },
+            ],
+            subject: "Registration Confirmation",
+            htmlContent: `<!DOCTYPE html><html><body><h1>Hello ${name}</h1> <br><p>Your account has been created successfully!</p> <br><p>Please login to access your account.</p> </body></html>`,
+            params: {
+              greeting: "This is the default greeting",
+              headline: "This is the default headline",
+            },
+          })
+          .then(
+            function (data) {
+              console.log(data);
+            },
+            function (error) {
+              console.error(error);
+            }
+          );
 
         return res.status(201).json({
           message: `Utilisateur ${newUser.name} enregisté avec succès !`,
