@@ -34,7 +34,7 @@ app.use(bodyParser.json());
 app.use("/api/auth", AuthRouter);
 // app.use("/api/admin", AdminRouter);
 // app.use("/api/profile", ProfileRouter);
-app.use("/api/store", StoreRouter);
+// app.use("/api/store", StoreRouter);
 prisma
   .$connect()
   .then(() => console.log("Prisma connected to database !"))
