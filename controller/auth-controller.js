@@ -8,11 +8,13 @@ const bcrypt = require("bcrypt");
 // var ObjectId = require("mongoose").Types.ObjectId;
 const jwt = require("jsonwebtoken");
 // const { stringify } = require("querystring");
+const stripe = require("stripe")(process.env.VITE_APP_STRIPE_API_SECRET);
 
 require("dotenv").config();
 
-const jwtKey = process.env.JWT_SECRET;
+const jwtKey = process.env.ACCESS_TOKEN_SECRET;
 const jwtExpirySeconds = process.env.JWT_EXPIRES_IN;
+const salt = bcrypt.genSaltSync(10);
 
 // import { PrismaClient } from "@prisma/client";
 const { PrismaClient } = require("@prisma/client");
@@ -35,18 +37,8 @@ main()
 
 module.exports = {
   registerValidation: async (req, res, next) => {
-    const {
-      email,
-      name,
-      password,
-      phone,
-      isAdmin,
-      city,
-      location,
-      zip,
-      stripeCustomerId,
-    } = req.body;
-    const salt = bcrypt.genSaltSync(10);
+    const { email, name, password, phone, isAdmin, city, location, zip } =
+      req.body;
     const patternMail =
       /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     // const patternPhone = /^33\d{9}$/;
@@ -66,6 +58,15 @@ module.exports = {
           "Format du mot de passe invalide! Au moins un chiffre [0-9] - Au moins un caractère minuscule [a-z] - Au moins un caractère majuscule [A-Z] - Au moins 8 caracteres - Sans caractere special"
         );
       }
+      if (!req.body.location || !location) {
+        throw new Error("Il manque l'adresse' !");
+      }
+      if (!req.body.zip || !zip) {
+        throw new Error("Il manque le code postal !");
+      }
+      if (!req.body.city || !city) {
+        throw new Error("Il manque la ville !");
+      }
       if (!req.body.email || !email) {
         throw new Error("Il manque l'email !");
       }
@@ -84,6 +85,9 @@ module.exports = {
       res.password = bcrypt.hashSync(password, 5, salt);
       res.phone = phone;
       res.isAdmin = isAdmin;
+      res.zip = zip;
+      res.city = city;
+      res.location = location;
       next();
     } catch (error) {
       res.status(400).json({ message: error.message });
@@ -92,21 +96,12 @@ module.exports = {
   },
 
   register: async (req, res) => {
-    const { name, password, email, phone, createdAt, isAdmin } = req.body;
+    const { name, password, email, phone, isAdmin, zip, city, location } =
+      req.body;
     console.log("validation worked");
     console.log("validation worked");
     console.log("validation worked");
     console.log("validation worked");
-
-    const token = jwt.sign(
-      {
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 60 * 60,
-        isAdmin,
-        name,
-      },
-      jwtKey
-    );
 
     try {
       const existingUser = await prisma.user.findFirst({
@@ -128,13 +123,37 @@ module.exports = {
           });
         }
       } else {
+        const token = jwt.sign(
+          {
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 60 * 60,
+            isAdmin,
+            name,
+          },
+          jwtKey
+        );
+
+        const customer = await stripe.customers.create({
+          email: email, // user's email
+          name: name, // user's name
+          address: {
+            line1: location, // Replace with user's street address
+            city: city,
+            postal_code: zip,
+            // state: 'CA', // Replace with user's state
+            // country: 'US' // Replace with user's country
+          },
+          // add other customer information
+        });
+        const stripeCustomerId = customer.id;
+
         const newUser = await prisma.user.create({
           data: {
             name: name,
             email: email,
-            password: password, // Make sure to hash the password before saving
+            password: bcrypt.hashSync(password, 5, salt), // Make sure to hash the password before saving
             phone: phone,
-            createdAt: new Date(),
+            // createdAt: new Date(),
             // isAdmin: isAdmin || false,
             city: city,
             location: location,
@@ -145,7 +164,7 @@ module.exports = {
         });
 
         return res.status(201).json({
-          message: `User ${newUser.name} successfully registered`,
+          message: `Utilisateur ${newUser.name} enregisté avec succès !`,
         });
       }
     } catch (error) {
