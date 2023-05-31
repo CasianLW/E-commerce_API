@@ -118,193 +118,151 @@ module.exports = {
     //   });
     // } catch (error) {}
   },
-  createCreneau: async (req, res) => {
+  createEvent: async (req, res) => {
     try {
-      const { available, user, time, date } = req.body;
-      // gestion erreurs
-      const patternDate =
-        /^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$/;
-      const patternTime = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-      if (date && !req.body.date.match(patternDate)) {
-        throw new Error("erreur date invalide");
-      }
-      if ((!req.body.available || !available) && isNaN(available)) {
-        throw new Error("erreur dispo");
+      const { title, content, image, author } = req.body;
+      // Error management
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
       }
 
-      if (time && !req.body.time.match(patternTime)) {
-        throw new Error("erreur temps invalide");
-      }
-      if (!req.body.user || !user) {
-        throw new Error("erreur pseudo");
-      }
-      // if (user.isNaN) {
-      //   console.log("dhadazdz");
-      //   throw new Error("erreur inex");
-      // }
-      if (!req.body.time || !time) {
-        throw new Error("erreur temps");
-      }
-      if (!req.body.date || !date) {
-        throw new Error("erreur date");
+      if (!content) {
+        return res.status(400).json({ error: "Content is required" });
       }
 
-      if (available !== true && available !== false) {
-        throw new Error("erreur dispo format");
+      if (!author) {
+        return res.status(400).json({ error: "Author is required" });
       }
-      res.available = available;
-      res.user = user;
-      res.time = time;
-      res.date = date;
-      // res.isAdmin = isAdmin;
 
-      // creation creneau
-      const creneau = new Booking({
-        available,
-        user,
-        time,
-        date,
+      const newEvent = await prisma.event.create({
+        data: {
+          title: title,
+          content: content,
+          image: image, // it's optional
+          author: author,
+          published: false, // default value
+        },
       });
-      console.log(user + " = nom de l'utillisateur assigné au creneau crée");
-      const db = mongoose.connection;
-      // console.log(await db.collections);
-      if (db.collections.creneaux) {
-        // Users existants dans la base de données
 
-        const existingCreneau = await db.collections.creneaux.findOne({
-          date: `${date}`,
-        });
-        if (existingCreneau) {
-          return res.status(400).json({
-            message: `creneau du ${existingCreneau.date} à ${existingCreneau.time} déja existant`,
-          });
-        } else {
-          // utilisateur et mail disponible
-          const creneauSave = await creneau.save();
-          return res.status(400).json({
-            message: `Creneau enregistré ${creneauSave}`,
-          });
-        }
-      } else {
-        return res.status(400).json({
-          message: `Collection inexistante`,
-        });
-      }
-
-      //
-      //
-      //
-      return res.status(200).json({
-        message: "Ca fonctionne, creneau crée !",
-        available,
-        user,
-        time,
-        date,
+      return res.status(201).json({
+        message: `Event ${newEvent.title} created successfully`,
+        event: newEvent,
       });
     } catch (error) {
-      console.log(error.message);
-      let status = 500;
-      let message =
-        "Erreur du serveur, assurez vous d'être connecté en tant qu'admin.";
-
-      if (error.message === "erreur date invalide") {
-        status = 400;
-        message =
-          "Format date invalide, format accepté jour/mois/année ex: 30/12/2022";
-      }
-      if (error.message === "erreur temps invalide") {
-        status = 400;
-        message =
-          "Format temps invalide, format accepté heure:minutes ex: 19:15";
-      }
-      if (error.message === "erreur dispo format") {
-        status = 400;
-        message =
-          "Format disponibilité invalide, format accepté : vrai/faux (true / false)";
-      }
-      if (error.message === "erreur pseudo") {
-        status = 400;
-        message = "Il manque l'utilisateur !";
-      }
-      if (error.message === "erreur dispo") {
-        status = 400;
-        message = "Il manque la disponibilité !";
-      }
-      if (error.message === "erreur date") {
-        status = 400;
-        message = "Il manque la date !";
-      }
-      if (error.message === "erreur temps") {
-        status = 400;
-        message = "Il manque le temps !";
-      }
-      return res.status(status).json({
-        message: `${message}`,
+      console.error("An error occurred during event creation: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error}`,
       });
+    } finally {
+      await prisma.$disconnect();
     }
   },
-  showCreneaux: async (req, res) => {
+  // deleteEvent method
+  deleteEvent: async (req, res) => {
     try {
-      // afficher les creneaux
-      // var userMap = {};
-      const db = mongoose.connection;
+      const { id } = req.params;
 
-      const creneaux2 = [];
+      if (!id) {
+        return res.status(400).json({ error: "Event ID is required" });
+      }
 
-      // findOne({
-      //   date: `${date}`,
-      // });
-
-      const creneaux = await Booking.find().populate("user");
-      // const test2 = await db.collections.creneaux.find().populate("user");
-      // console.log(test);
-
-      creneaux.forEach(function (myDoc) {
-        // await db.collections.creneaux.find().forEach(function (myDoc) {
-        // console.log(myDoc.user);
-        // const userNickname = await db.collections.users.findOne({
-        //   _id: ObjectId(myDoc.user),
-        // });
-        const creneau = [
-          {
-            id: myDoc._id,
-            date: myDoc.date,
-            time: myDoc.time,
-            available: myDoc.available,
-            userId: myDoc.user?._id,
-            userName: myDoc.user?.nickname,
-          },
-        ];
-        creneaux2.push(creneau);
-        // console.log(creneaux[3]);
-        // console.log(
-        //   await db.collections.users.findOne({
-        //     _id: ObjectId(myDoc.user),
-        //   })
-        // );
-        //   return creneau[1];
+      const event = await prisma.event.delete({
+        where: { id: Number(id) },
       });
-      //   console.log(creneau);
-      //   console.log(creneaux);
-      // (await db.collections.creneaux.distinct("date")) +
-      // ":" +
-      // (await db.collections.creneaux.distinct("time"));
-      // .distinct("nickname")
+
       return res.status(200).json({
-        message: "Voici la liste des creneaux:",
-        creneaux2,
+        message: `Event ${event.id} deleted successfully`,
+        event: event,
       });
     } catch (error) {
-      console.log(error.message);
-      let status = 500;
-      let message = "Erreur du serveur";
-      if (error.message === "erreur droits") {
-        status = 400;
-        message = "Veuillez vous connecter avec un compte Admin !";
-      }
-      return res.status(status).json({
-        message: `${message}`,
+      console.error("An error occurred during event deletion: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error}`,
       });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  // editEvent method
+  editEvent: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, content, image, author, published } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: "Event ID is required" });
+      }
+
+      const updatedEvent = await prisma.event.update({
+        where: { id: Number(id) },
+        data: { title, content, image, author, published },
+      });
+
+      return res.status(200).json({
+        message: `Event ${updatedEvent.id} updated successfully`,
+        event: updatedEvent,
+      });
+    } catch (error) {
+      console.error("An error occurred during event update: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+  // getEventsList method
+  getEventsList: async (req, res) => {
+    try {
+      const events = await prisma.event.findMany();
+
+      if (events.length === 0) {
+        throw new Error("No events found");
+      }
+
+      return res.status(200).json({
+        message: "Events fetched successfully",
+        events: events,
+      });
+    } catch (error) {
+      console.error("An error occurred while fetching events: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  // getEvent method
+  getEvent: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        throw new Error("Event ID is required");
+      }
+
+      const event = await prisma.event.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!event) {
+        throw new Error(`No event found with id: ${id}`);
+      }
+
+      return res.status(200).json({
+        message: "Event fetched successfully",
+        event: event,
+      });
+    } catch (error) {
+      console.error("An error occurred while fetching the event: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
     }
   },
 };
