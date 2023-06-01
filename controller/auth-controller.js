@@ -1,5 +1,7 @@
 // const uuid = require("uuid");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const { add, isPast } = require("date-fns");
 // const User = require("../model/user");
 // const UserTemp = require("../model/userTemp");
 const SibApiV3Sdk = require("sib-api-v3-sdk");
@@ -96,7 +98,6 @@ module.exports = {
 
   register: async (req, res) => {
     const { name, password, email, phone, zip, city, location } = req.body;
-
     try {
       const existingUser = await prisma.user.findFirst({
         where: {
@@ -306,32 +307,150 @@ module.exports = {
     }
   },
 
-  // getUsers: async (req, res) => {
-  //   // const ge = 1;
-  //   const ge = req.params.token;
+  forgotPassword: async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) throw new Error("Email is required");
 
-  //   if (ge === 1) {
-  //     return res.status(200).json({
-  //       error: "ca fonctionne !",
-  //     });
-  //   } else {
-  //     // res.redirect("/home");
-  //     return res.status(500).json({
-  //       error: "pas admin, pas entré !",
-  //     });
-  //   }
-  //   // try {
-  //   //   const ge = req.params.token;
+      const user = await prisma.user.findUnique({ where: { email: email } });
+      if (!user) throw new Error("User not found");
 
-  //   //   // return res.status(500).json({ message: "ca a fonctionné! ", getToken });
-  //   //   // console.log(req.params.id);
-  //   //   // const { token } = req.body;
-  //   //   const db = mongoose.connection;
-  //   //   const checkToken = await db.collections.temporary_users.findOne({
-  //   //     // _id: `{"$oid":"${getToken}"}`,
-  //   //     // name: "casian-all-t5250",
-  //   //     _id: ObjectId(`${getToken}`),
-  //   //   });
-  //   // } catch (error) {}
-  // },
+      const resetPasswordToken = crypto.randomBytes(20).toString("hex");
+      const resetPasswordExpires = add(new Date(), { minutes: 10 });
+
+      const updatedUser = await prisma.user.update({
+        where: { email: email },
+        data: {
+          resetPasswordToken: resetPasswordToken,
+          resetPasswordExpires: resetPasswordExpires,
+        },
+      });
+
+      SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
+        process.env.SENDINBLUE_API_KEY;
+      new SibApiV3Sdk.TransactionalEmailsApi()
+        .sendTransacEmail({
+          sender: {
+            email: process.env.SENDING_EMAIL,
+            name: process.env.SENDING_NAME,
+          },
+          to: [
+            {
+              email: email,
+              name: user.name,
+            },
+          ],
+          subject: "Password Reset Request",
+          htmlContent: `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                  <style>
+                  .container {
+                      background-color: #000;
+                      color: #fff;
+                      font-family: Arial, sans-serif;
+                      padding: 20px;
+                      border-radius: 20px;
+                  }
+                  .header {
+                      background-color: #7458EA;
+                      padding: 20px;
+                      border-radius: 20px;
+                  }
+                  .message {
+                      background-color: #D3FE57;
+                      padding: 20px;
+                      margin-top: 20px;
+                      border-radius: 20px;
+                  }
+                  </style>
+                  </head>
+                  <body>
+                  <div class="container">
+                      <div class="header">
+                      <h1>Hello ${user.name}</h1>
+                      </div>
+                      <div class="message">
+                      <p>You recently requested to reset your password. Click the link below to reset it. (Expires in 10 minutes)</p>
+                      <a href="${process.env.PATH_TO_RESET_PASSWORD}/?${resetPasswordToken}">Reset your password</a>
+                      </div>
+                  </div>
+                  </body>
+                  </html>`,
+          params: {
+            greeting: "This is the default greeting",
+            headline: "This is the default headline",
+          },
+        })
+        .then(
+          function (data) {
+            console.log(data);
+          },
+          function (error) {
+            console.error(error);
+          }
+        );
+
+      return res.status(200).json({
+        message: `Password reset link sent to ${email}`,
+      });
+    } catch (error) {
+      console.error("An error occurred during forgot password: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  resetPassword: async (req, res) => {
+    try {
+      const { resetToken } = req.params;
+      const { password } = req.body;
+
+      if (!resetToken || !password)
+        throw new Error("Reset token and new password are required");
+
+      const patternPass = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$/;
+
+      if (password && !req.body.password.match(patternPass)) {
+        throw new Error(
+          "Format du mot de passe invalide! Au moins un chiffre [0-9] - Au moins un caractère minuscule [a-z] - Au moins un caractère majuscule [A-Z] - Au moins 8 caracteres - Sans caractere special"
+        );
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { resetPasswordToken: resetToken },
+      });
+      if (!user) throw new Error("Invalid reset token");
+
+      if (isPast(user.resetPasswordExpires)) {
+        throw new Error("Reset token has expired");
+      }
+
+      const hashedPassword = bcrypt.hashSync(password, salt);
+
+      const updatedUser = await prisma.user.update({
+        where: { resetPasswordToken: resetToken },
+        data: {
+          password: hashedPassword,
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+        },
+      });
+
+      return res.status(200).json({
+        message: `Password has been changed`,
+      });
+    } catch (error) {
+      console.error("An error occurred during password reset: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
 };
