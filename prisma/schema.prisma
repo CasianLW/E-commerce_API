@@ -47,6 +47,8 @@ model Subscription {
   clients User[]
   price Float
   clientId Int
+
+  relatedGames Game[] // Si vous avez un modèle Game
 }
 
 enum SubscriptionInterval {
@@ -91,7 +93,68 @@ enum PurchaseStatus {
   shipped
   delivered
   returned
-
   cancelled
   active
 }
+
+model Game {
+  id                 Int            @id @default(autoincrement())
+  name               String
+  image_url          String         @default("https://www.placeholder.com/200/300")
+  image_url2         String         @default("https://www.placeholder.com/200/300")
+  image_url3         String         @default("https://www.placeholder.com/200/300")
+  description        String
+  // sizeGame        sizeGame[]
+  subscriptions Subscription[]
+
+  author String? @default("Unknown")
+  size String? @default("Unknown")
+  compatibility String? @default("Windows / Linux / OS / IOS / Android")
+
+  relatedCollections Collection[]
+
+  stripeProductId    String?        // stripe product id
+  stripePriceId      String?        // stripe price id
+  // relatedEvents      EventGame[]
+  price              Float?
+  stock              Int            @default(99999)
+  status             GameStatus  @default(available)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+
+model Collection {
+  id            Int            @id @default(autoincrement())
+  name          String
+  image         String         @default("https://www.placeholder.com/200/300")
+  description   String
+  status        Boolean        @default(true)
+
+  games      Game[]
+  // subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum GameStatus {
+  pending
+  available
+  sold_out
+}
+// model sizeGame {
+//   id        Int     @id @default(autoincrement())
+//   sizeId    Int
+//   size      Size    @relation(fields: [sizeId], references: [id])
+//   gameId Int
+//   game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+//   // Ajoutez la relation inverse pour le modèle Size
+//   // Size      Size[]    @relation("SizeGameSize")
+// }
+
+// model Size {
+//   id           Int           @id @default(autoincrement())
+//   size         Int
+//   sizeGames sizeGame[] // Ajoutez la relation inverse pour le modèle sizeGame
+// }
+
