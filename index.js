@@ -37,7 +37,8 @@ app.use(bodyParser.json());
 // })
 app.use("/api/profil", verifyConnected, ProfilRouter);
 app.use("/api/auth", AuthRouter);
-app.use("/api/admin", verifyAdmin, AdminRouter);
+// app.use("/api/admin", verifyAdmin, AdminRouter);
+app.use("/api/admin", AdminRouter);
 
 // app.use("/api/admin", AdminRouter);
 // app.use("/api/admin", AdminRouter);
