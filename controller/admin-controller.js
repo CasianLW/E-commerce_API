@@ -1,72 +1,15 @@
-const uuid = require("uuid");
-const bcrypt = require("bcrypt");
-const User = require("../model/user");
-const UserTemp = require("../model/userTemp");
-const Booking = require("../model/booking");
-const SibApiV3Sdk = require("sib-api-v3-sdk");
-const { randomFillSync } = require("crypto");
-const mongoose = require("mongoose");
-var ObjectId = require("mongoose").Types.ObjectId;
 const jwt = require("jsonwebtoken");
-const { stringify } = require("querystring");
-const { nextTick } = require("process");
 
 require("dotenv").config();
 
-const jwtKey = process.env.JWT_SECRET;
+const jwtKey = process.env.ACCESS_TOKEN_SECRET;
 const jwtExpirySeconds = process.env.JWT_EXPIRES_IN;
 
-module.exports = {
-  verifyAdmin: async (req, res, next) => {
-    try {
-      // console.log(token);
-      // if (
-      //   req.headers &&
-      //   req.headers.authorisation &&
-      //   req.headers.authorization.split(" ")[0]
-      // ) {
-      // ou bien
-      // console.log("avant token");
-      const token = req.headers?.authorization?.split(" ")[1];
-      // console.log(token);
-      if (token) {
-        // const token = req.headers.authorization.split(" ")[0];
-        const decode = jwt.verify(token, `${jwtKey}`);
-        // console.log(decode["isAdmin"]);
-        if (decode["isAdmin"] === true) {
-          return next();
-          // return res.status(200).json({
-          //   message: "ca fonctionne, admin connecté !",
-          // });
-        } else {
-          throw new Error("erreur droits");
-        }
-      } else {
-        throw new Error("erreur connexion");
-      }
-      next();
-    } catch (error) {
-      console.log(error.message);
-      let status = 500;
-      let message = "Erreur du serveur";
-      if (error.message === "erreur connexion") {
-        status = 400;
-        message = "Probleme de connexion, verifiez votre token JWT du lien !";
-      }
-      if (error.message === "invalid token") {
-        status = 400;
-        message = "Problème JWT: invalid token !";
-      }
-      if (error.message === "erreur droits") {
-        status = 400;
-        message = "Veuillez vous connecter avec un compte Admin !";
-      }
-      return res.status(status).json({
-        message: `${message}`,
-      });
-    }
-  },
+const { PrismaClient } = require("@prisma/client");
 
+const prisma = new PrismaClient();
+
+module.exports = {
   getUsers: async (req, res) => {
     // const ge = 1;
     // console.log("test next");
@@ -239,6 +182,7 @@ module.exports = {
   getEvent: async (req, res) => {
     try {
       const { id } = req.params;
+      // const id = req.params.id;
 
       if (!id) {
         throw new Error("Event ID is required");
@@ -266,10 +210,3 @@ module.exports = {
     }
   },
 };
-
-// const db = mongoose.connection;
-// const checkToken = await db.collections.temporary_users.findOne({
-//   // _id: `{"$oid":"${getToken}"}`,
-//   // nickname: "casian-all-t5250",
-//   _id: ObjectId(`${getToken}`),
-// });
