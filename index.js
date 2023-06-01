@@ -11,6 +11,7 @@ const bodyParser = require("body-parser");
 const https = require("https");
 
 const verifyAdmin = require("./middleware/verifyAdmin");
+const verifyConnected = require("./middleware/verifyConnected");
 
 // const sslOptions = {
 //   key: fs.readFileSync("./server/localhost-key.pem"),
@@ -26,6 +27,7 @@ app.use(async (req, res, next) => {
 
 const AuthRouter = require("./router/AuthRouter").router;
 const AdminRouter = require("./router/AdminRouter").router;
+const ProfilRouter = require("./router/ProfilRouter").router;
 // const StoreRouter = require("./router/StoreRouter").router;
 // const ProfileRouter = require("./router/ProfileRouter").router;
 
@@ -33,6 +35,7 @@ app.use(bodyParser.json());
 // app.use('/api', (req, res) => {
 //     res.send('Hello to Yuniq store Api !')
 // })
+app.use("/api/profil", verifyConnected, ProfilRouter);
 app.use("/api/auth", AuthRouter);
 app.use("/api/admin", verifyAdmin, AdminRouter);
 
