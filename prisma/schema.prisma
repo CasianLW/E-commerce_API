@@ -32,6 +32,9 @@ model User {
   subscription Subscription? @relation(fields:[subscriptionId], references: [id])
 
   isAdmin Boolean @default(false)
+
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
   
 }
 model Subscription {
