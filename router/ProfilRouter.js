@@ -5,7 +5,7 @@ const {
   editUser,
   getUsersList,
   getUser,
-} = require("../controller/admin-controller");
+} = require("../controller/admin/adminUsers-controller");
 
 exports.router = (() => {
   const profilRouter = express.Router();
