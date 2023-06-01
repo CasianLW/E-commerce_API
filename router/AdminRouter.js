@@ -5,12 +5,15 @@ const {
   editUser,
   getUsersList,
   getUser,
+} = require("../controller/admin/adminUsers-controller");
+const {
   createEvent,
   deleteEvent,
   editEvent,
   getEventsList,
   getEvent,
-} = require("../controller/admin-controller");
+} = require("../controller/admin/adminEvents-controller");
+const { createGame } = require("../controller/admin/adminShop-controller");
 
 exports.router = (() => {
   const adminRouter = express.Router();
@@ -28,6 +31,13 @@ exports.router = (() => {
   adminRouter.route("/events/:id").get(getEvent);
   adminRouter.route("/events/:id").put(editEvent);
   adminRouter.route("/events/:id").delete(deleteEvent);
+
+  //   Games/products routes
+  //   adminRouter.route("/games/").get(getEventsList);
+  adminRouter.route("/games/").post(createGame);
+  //   adminRouter.route("/games/:id").get(getEvent);
+  //   adminRouter.route("/games/:id").put(editEvent);
+  //   adminRouter.route("/games/:id").delete(deleteEvent);
   // adminRouter.route("/register/confirm/:token").get(confirmAccount);
   // authRouter.route("/home");
   // authRouter.route("/admin/users/:token").get(getUsers);
