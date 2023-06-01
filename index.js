@@ -10,6 +10,8 @@ const prisma = new PrismaClient();
 const bodyParser = require("body-parser");
 const https = require("https");
 
+const verifyAdmin = require("./middleware/verifyAdmin");
+
 // const sslOptions = {
 //   key: fs.readFileSync("./server/localhost-key.pem"),
 //   cert: fs.readFileSync("./server/localhost.pem"),
@@ -23,8 +25,8 @@ app.use(async (req, res, next) => {
 });
 
 const AuthRouter = require("./router/AuthRouter").router;
-// const AdminRouter = require("./router/AdminRouter").router;
-const StoreRouter = require("./router/StoreRouter").router;
+const AdminRouter = require("./router/AdminRouter").router;
+// const StoreRouter = require("./router/StoreRouter").router;
 // const ProfileRouter = require("./router/ProfileRouter").router;
 
 app.use(bodyParser.json());
@@ -32,6 +34,11 @@ app.use(bodyParser.json());
 //     res.send('Hello to Yuniq store Api !')
 // })
 app.use("/api/auth", AuthRouter);
+app.use("/api/admin", verifyAdmin, AdminRouter);
+
+// app.use("/api/admin", AdminRouter);
+// app.use("/api/admin", AdminRouter);
+
 // app.use("/api/admin", AdminRouter);
 // app.use("/api/profile", ProfileRouter);
 // app.use("/api/store", StoreRouter);
