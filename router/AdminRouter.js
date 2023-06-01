@@ -1,5 +1,10 @@
 const express = require("express");
 const {
+  createUser,
+  deleteUser,
+  editUser,
+  getUsersList,
+  getUser,
   createEvent,
   deleteEvent,
   editEvent,
@@ -9,6 +14,13 @@ const {
 
 exports.router = (() => {
   const adminRouter = express.Router();
+
+  //   Users routes
+  adminRouter.route("/users/").get(getUsersList);
+  adminRouter.route("/users/").post(createUser);
+  adminRouter.route("/users/:id").get(getUser);
+  adminRouter.route("/users/:id").put(editUser);
+  adminRouter.route("/users/:id").delete(deleteUser);
 
   //   Events routes
   adminRouter.route("/events/").get(getEventsList);
