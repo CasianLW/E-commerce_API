@@ -74,4 +74,150 @@ module.exports = {
       await prisma.$disconnect();
     }
   },
+  listAllGames: async (req, res) => {
+    try {
+      const games = await prisma.game.findMany();
+
+      if (games.length === 0) throw new Error("No games found");
+
+      return res.status(200).json({
+        message: "Games fetched successfully",
+        games: games,
+      });
+    } catch (error) {
+      console.error("An error occurred while fetching games: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  editGame: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        name,
+        description,
+        author,
+        size,
+        compatibility,
+        price,
+        stock,
+        status,
+        image_url,
+        image_url2,
+        image_url3,
+      } = req.body;
+
+      if (!id) throw new Error("Game ID is required");
+
+      const game = await prisma.game.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!game) throw new Error("Game not found");
+
+      await stripe.products.update(game.stripeProductId, {
+        name: name,
+        description: description,
+        images: [image_url, image_url2, image_url3],
+      });
+
+      // Make the old price inactive
+      await stripe.prices.update(game.stripePriceId, { active: false });
+
+      const newPriceObj = await stripe.prices.create({
+        unit_amount: price * 100,
+        currency: "eur",
+        product: game.stripeProductId,
+      });
+
+      const updatedGame = await prisma.game.update({
+        where: { id: Number(id) },
+        data: {
+          name,
+          description,
+          author,
+          size,
+          compatibility,
+          price,
+          stock,
+          status: status,
+          stripePriceId: newPriceObj.id,
+        },
+      });
+
+      return res.status(200).json({
+        message: `Game ${updatedGame.id} updated successfully`,
+        game: updatedGame,
+      });
+    } catch (error) {
+      console.error("An error occurred during game update: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  deleteGame: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!id) throw new Error("Game ID is required");
+
+      const game = await prisma.game.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!game) throw new Error("Game not found");
+
+      await stripe.products.del(game.stripeProductId);
+
+      const deletedGame = await prisma.game.delete({
+        where: { id: Number(id) },
+      });
+
+      return res.status(200).json({
+        message: `Game ${deletedGame.id} deleted successfully`,
+        game: deletedGame,
+      });
+    } catch (error) {
+      console.error("An error occurred during game deletion: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  getGame: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!id) throw new Error("Game ID is required");
+
+      const game = await prisma.game.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!game) throw new Error(`No game found with id: ${id}`);
+
+      return res.status(200).json({
+        message: "Game fetched successfully",
+        game: game,
+      });
+    } catch (error) {
+      console.error("An error occurred while fetching game: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
 };
