@@ -220,4 +220,204 @@ module.exports = {
       await prisma.$disconnect();
     }
   },
+
+  //
+  // Subscription CRUD
+  //
+  createSubscription: async (req, res) => {
+    try {
+      const { name, description, image, interval, intervalCount, price } =
+        req.body;
+
+      if (!name || !description || !price || !interval || !intervalCount) {
+        throw new Error("All fields are required");
+      }
+
+      // Create the product on Stripe
+      const product = await stripe.products.create({
+        name: name,
+        description: description,
+        images: [image],
+      });
+
+      const priceObj = await stripe.prices.create({
+        unit_amount: price * 100,
+        currency: "eur",
+        product: product.id,
+        recurring: { interval: interval, interval_count: intervalCount },
+      });
+
+      // Store the product in the local database
+      const createdSubscription = await prisma.subscription.create({
+        data: {
+          name,
+          description,
+          image,
+          interval,
+          intervalCount,
+          price,
+          stripeProductId: product.id,
+          stripePriceId: priceObj.id,
+        },
+      });
+
+      return res.status(200).json({
+        message: `Subscription ${createdSubscription.id} created successfully`,
+        subscription: createdSubscription,
+      });
+    } catch (error) {
+      console.error("An error occurred during subscription creation: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  // Fetch all subscriptions
+  listAllSubscriptions: async (req, res) => {
+    try {
+      const subscriptions = await prisma.subscription.findMany();
+      return res.status(200).json({ subscriptions });
+    } catch (error) {
+      console.error("An error occurred while fetching subscriptions: ", error);
+      return res
+        .status(500)
+        .json({ message: `Server error: ${error.message}` });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  // Fetch a specific subscription
+  getSubscription: async (req, res) => {
+    const { id } = req.params;
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!subscription)
+        return res.status(404).json({ message: "Subscription not found" });
+
+      return res.status(200).json({ subscription });
+    } catch (error) {
+      console.error(
+        "An error occurred while fetching the subscription: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ message: `Server error: ${error.message}` });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  // // Make the old price inactive
+  // await stripe.prices.update(game.stripePriceId, { active: false });
+
+  // const newPriceObj = await stripe.prices.create({
+  //   unit_amount: price * 100,
+  //   currency: "eur",
+  //   product: game.stripeProductId,
+  // });
+  // Update a subscription
+  editSubscription: async (req, res) => {
+    const { id } = req.params;
+    const { name, description, image, interval, intervalCount, price } =
+      req.body;
+
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!subscription)
+        return res.status(404).json({ message: "Subscription not found" });
+
+      // Update the product on Stripe
+      const product = await stripe.products.update(
+        subscription.stripeProductId,
+        {
+          name: name,
+          description: description,
+          images: [image],
+        }
+      );
+
+      // // delete the old price (not working rn)
+      // await stripe.prices.update(product.stripePriceId, { active: false });
+
+      // Create the new price
+      const newPriceObj = await stripe.prices.create({
+        unit_amount: price * 100,
+        currency: "eur",
+        product: product.id,
+        recurring: { interval: interval, interval_count: intervalCount },
+      });
+
+      // Update the subscription in the local database
+      const updatedSubscription = await prisma.subscription.update({
+        where: { id: Number(id) },
+        data: {
+          name,
+          description,
+          image,
+          interval,
+          intervalCount,
+          price,
+          stripeProductId: product.id,
+          stripePriceId: newPriceObj.id,
+        },
+      });
+
+      return res.status(200).json({
+        message: "Subscription updated successfully",
+        subscription: updatedSubscription,
+      });
+    } catch (error) {
+      console.error(
+        "An error occurred while updating the subscription: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ message: `Server error: ${error.message}` });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  // Delete a subscription
+  deleteSubscription: async (req, res) => {
+    const { id } = req.params;
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!subscription)
+        return res.status(404).json({ message: "Subscription not found" });
+
+      await prisma.subscription.delete({
+        where: { id: Number(id) },
+      });
+
+      return res
+        .status(200)
+        .json({ message: "Subscription deleted successfully" });
+    } catch (error) {
+      console.error(
+        "An error occurred while deleting the subscription: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ message: `Server error: ${error.message}` });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
 };
