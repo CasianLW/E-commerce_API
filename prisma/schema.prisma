@@ -37,19 +37,26 @@ model User {
   resetPasswordExpires DateTime?
   
 }
-model Subscription {
-  id    Int     @id @default(autoincrement())
-  name  String
-  description  String
-  image String
-  interval SubscriptionInterval @default(month)
-  intervalCount Int @default(1)
-  clients User[]
-  price Float
-  clientId Int
 
-  relatedGames Game[] // Si vous avez un modèle Game
+
+model Subscription {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  price              Float
+  image              String               @default("https://www.placeholder.com/200/300")
+  description        String
+  stripeProductId    String?
+  stripePriceId      String?
+  interval           SubscriptionInterval @default(month)
+  intervalCount      Int                  @default(1)
+  // relatedCollections Collection[] // Si vous avez un modèle Collection
+  relatedGames Game[] // Si vous avez un modèle Game/produit
+
+  users              User[] // Pour établir la relation avec les utilisateurs
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 }
+
 
 enum SubscriptionInterval {
   day
