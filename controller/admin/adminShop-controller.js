@@ -420,4 +420,76 @@ module.exports = {
       await prisma.$disconnect();
     }
   },
+
+  //
+  // Collections CRUD
+  //
+  getAllCollections: async (req, res) => {
+    try {
+      const collections = await prisma.collection.findMany();
+      res.json(collections);
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  },
+
+  getCollection: async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const collection = await prisma.collection.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (collection === null)
+        res.status(404).send("No collection found with the given id.");
+      else res.json(collection);
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  },
+
+  createCollection: async (req, res) => {
+    const { name, image, description, status } = req.body;
+
+    try {
+      const newCollection = await prisma.collection.create({
+        data: { name, image, description, status },
+      });
+
+      res.status(201).json(newCollection);
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  },
+
+  updateCollection: async (req, res) => {
+    const { id } = req.params;
+    const { name, image, description, status } = req.body;
+
+    try {
+      const updatedCollection = await prisma.collection.update({
+        where: { id: Number(id) },
+        data: { name, image, description, status },
+      });
+
+      res.json(updatedCollection);
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  },
+
+  deleteCollection: async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      await prisma.collection.delete({
+        where: { id: Number(id) },
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  },
 };
