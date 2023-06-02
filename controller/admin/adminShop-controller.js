@@ -393,6 +393,7 @@ module.exports = {
   // Delete a subscription
   deleteSubscription: async (req, res) => {
     const { id } = req.params;
+
     try {
       const subscription = await prisma.subscription.findUnique({
         where: { id: Number(id) },
@@ -401,6 +402,12 @@ module.exports = {
       if (!subscription)
         return res.status(404).json({ message: "Subscription not found" });
 
+      // Set product as inactive in Stripe
+      await stripe.products.update(subscription.stripeProductId, {
+        active: false,
+      });
+
+      // Delete from local database
       await prisma.subscription.delete({
         where: { id: Number(id) },
       });
