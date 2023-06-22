@@ -431,12 +431,18 @@ module.exports = {
   //
   // Collections CRUD
   //
-  getAllCollections: async (req, res) => {
+  listAllCollections: async (req, res) => {
     try {
       const collections = await prisma.collection.findMany();
-      res.json(collections);
+      res.status(200).json({
+        message: "Collections fetched successfully",
+        collections: collections,
+      });
     } catch (error) {
-      res.status(500).send(error);
+      console.error("An error occurred while fetching collections: ", error);
+      res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
     }
   },
 
@@ -448,11 +454,21 @@ module.exports = {
         where: { id: Number(id) },
       });
 
-      if (collection === null)
-        res.status(404).send("No collection found with the given id.");
-      else res.json(collection);
+      if (!collection) {
+        return res.status(404).json({
+          message: "No collection found with the given id.",
+        });
+      }
+
+      return res.status(200).json({
+        message: "Collection fetched successfully",
+        collection: collection,
+      });
     } catch (error) {
-      res.status(500).send(error);
+      console.error("An error occurred while fetching collection: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
     }
   },
 
@@ -464,13 +480,19 @@ module.exports = {
         data: { name, image, description, status },
       });
 
-      res.status(201).json(newCollection);
+      return res.status(201).json({
+        message: "Collection created successfully",
+        collection: newCollection,
+      });
     } catch (error) {
-      res.status(500).send(error);
+      console.error("An error occurred during collection creation: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
     }
   },
 
-  updateCollection: async (req, res) => {
+  editCollection: async (req, res) => {
     const { id } = req.params;
     const { name, image, description, status } = req.body;
 
@@ -480,9 +502,15 @@ module.exports = {
         data: { name, image, description, status },
       });
 
-      res.json(updatedCollection);
+      return res.status(200).json({
+        message: "Collection updated successfully",
+        collection: updatedCollection,
+      });
     } catch (error) {
-      res.status(500).send(error);
+      console.error("An error occurred during collection update: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
     }
   },
 
@@ -494,9 +522,14 @@ module.exports = {
         where: { id: Number(id) },
       });
 
-      res.status(204).send();
+      return res.status(204).json({
+        message: "Collection deleted successfully",
+      });
     } catch (error) {
-      res.status(500).send(error);
+      console.error("An error occurred during collection deletion: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
     }
   },
 };
