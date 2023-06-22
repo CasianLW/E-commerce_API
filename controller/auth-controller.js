@@ -43,7 +43,7 @@ module.exports = {
     const patternMail =
       /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     // const patternPhone = /^33\d{9}$/;
-    const patternPhone = /^[0-9]+$/;
+    const patternPhone = /^(\+33|0|0033)[1-9](\d{2}){4}$/;
 
     const patternPass = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$/;
 
@@ -51,14 +51,17 @@ module.exports = {
       if (email && !req.body.email.match(patternMail)) {
         throw new Error("Format du mail invalide!");
       }
-      if (phone && !req.body.phone.match(patternPhone)) {
+
+      if (phone && !req.body.phone.toString().match(patternPhone)) {
         throw new Error("Format du telephone invalide!");
       }
+
       if (password && !req.body.password.match(patternPass)) {
         throw new Error(
           "Format du mot de passe invalide! Au moins un chiffre [0-9] - Au moins un caractère minuscule [a-z] - Au moins un caractère majuscule [A-Z] - Au moins 8 caracteres - Sans caractere special"
         );
       }
+
       if (!req.body.location || !location) {
         throw new Error("Il manque l'adresse' !");
       }
@@ -80,6 +83,7 @@ module.exports = {
       if (!req.body.phone || !phone) {
         throw new Error("Il manque le numero de téléphone !");
       }
+
       res.password = password;
       res.email = email;
       res.name = name;
@@ -89,6 +93,7 @@ module.exports = {
       res.zip = zip;
       res.city = city;
       res.location = location;
+
       next();
     } catch (error) {
       res.status(400).json({ message: error.message });
@@ -118,15 +123,15 @@ module.exports = {
           });
         }
       } else {
-        const token = jwt.sign(
-          {
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 60 * 60,
-            isAdmin: false,
-            name: name,
-          },
-          jwtKey
-        );
+        // const token = jwt.sign(
+        //   {
+        //     iat: Math.floor(Date.now() / 1000),
+        //     exp: Math.floor(Date.now() / 1000) + 60 * 60,
+        //     isAdmin: false,
+        //     name: name,
+        //   },
+        //   jwtKey
+        // );
 
         const customer = await stripe.customers.create({
           email: email, // user's email
@@ -154,7 +159,24 @@ module.exports = {
             location: location,
             zip: zip,
             stripeCustomerId: stripeCustomerId,
+            token: "",
+          },
+        });
+
+        const payload = {
+          user: {
+            id: newUser.id,
+          },
+        };
+
+        const token = jwt.sign(payload, jwtKey, { expiresIn: "1h" });
+
+        addUserToken = await prisma.user.update({
+          data: {
             token: token,
+          },
+          where: {
+            id: newUser.id,
           },
         });
         // Now let's send a confirmation email
@@ -228,6 +250,8 @@ module.exports = {
 
         return res.status(201).json({
           message: `Utilisateur ${newUser.name} enregisté avec succès !`,
+          token: token,
+          user: newUser,
         });
       }
     } catch (error) {
@@ -241,6 +265,8 @@ module.exports = {
   },
 
   login: async (req, res) => {
+    console.log(req.body);
+
     try {
       const { email, password } = req.body;
 
@@ -258,22 +284,16 @@ module.exports = {
         );
         if (!isPasswordValid) throw new Error("Incorrect password");
 
-        const token = jwt.sign(
-          {
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 60 * 60,
-            isAdmin: existingUser.isAdmin,
-            name: existingUser.name,
+        const payload = {
+          user: {
+            id: existingUser.id,
           },
-          jwtKey
-        );
+        };
 
+        const token = jwt.sign(payload, jwtKey, { expiresIn: "1h" });
+
+        console.log(token);
         return res.status(200).json({
-          message: `Hello ${
-            existingUser.name
-          }, successfully logged in! Your account is ${
-            existingUser.isAdmin ? "ADMINISTRATOR" : "NORMAL"
-          }`,
           token,
         });
       } else {
