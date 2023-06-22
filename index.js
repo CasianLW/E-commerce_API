@@ -10,8 +10,9 @@ const prisma = new PrismaClient();
 const bodyParser = require("body-parser");
 const https = require("https");
 
-const verifyAdmin = require("./middleware/verifyAdmin");
 const verifyConnected = require("./middleware/verifyConnected");
+
+const stripe = require("stripe")(process.env.VITE_APP_STRIPE_API_SECRET); // Add this line
 
 // const sslOptions = {
 //   key: fs.readFileSync("./server/localhost-key.pem"),
@@ -35,10 +36,35 @@ app.use(bodyParser.json());
 // app.use('/api', (req, res) => {
 //     res.send('Hello to Yuniq store Api !')
 // })
-app.use("/api/profil", verifyConnected, ProfilRouter);
+app.use("/api/profil", ProfilRouter);
 app.use("/api/auth", AuthRouter);
-// app.use("/api/admin", verifyAdmin, AdminRouter);
 app.use("/api/admin", AdminRouter);
+// app.use("/api/admin", AdminRouter);
+
+// stripe checkout endpoint
+app.post("/create-checkout-session", async (req, res) => {
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Product name",
+            // you can modify above line based on your product name
+          },
+          unit_amount: 2000, // amount in cents, 2000 cents = 20.00 dollars
+        },
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    success_url: `${YOUR_DOMAIN}/success.html`,
+    cancel_url: `${YOUR_DOMAIN}/cancel.html`,
+  });
+
+  res.json({ id: session.id });
+});
 
 // app.use("/api/admin", AdminRouter);
 // app.use("/api/admin", AdminRouter);
@@ -57,27 +83,31 @@ prisma
 //     console.log(err)
 // })
 
-function startServer() {
-  const server = app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
-
-  server.on("error", (err) => {
-    console.log(err);
-    console.log("Restarting server in 3 seconds...");
-    setTimeout(() => {
-      startServer();
-    }, 3000);
-  });
-}
-
-startServer();
-
-// restart the server if nodemon crash
-process.on("unhandledRejection", (err) => {
-  console.log(err);
-  console.log("Restarting server in 3 seconds...");
-  setTimeout(() => {
-    startServer();
-  }, 3000);
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
+
+// function startServer() {
+//   const server = app.listen(port, () => {
+//     console.log(`Server running on port ${port}`);
+//   });
+
+//   server.on("error", (err) => {
+//     console.log(err);
+//     console.log("Restarting server in 3 seconds...");
+//     setTimeout(() => {
+//       startServer();
+//     }, 3000);
+//   });
+// }
+
+// startServer();
+
+// // restart the server if nodemon crash
+// process.on("unhandledRejection", (err) => {
+//   console.log(err);
+//   console.log("Restarting server in 3 seconds...");
+//   setTimeout(() => {
+//     startServer();
+//   }, 3000);
+// });
