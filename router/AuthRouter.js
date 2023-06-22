@@ -12,10 +12,10 @@ const {
 exports.router = (() => {
   const authRouter = express.Router();
 
-  authRouter.route("/register/").post(registerValidation, register);
+  authRouter.route("/register").post(registerValidation, register);
   // authRouter.route("/register/confirm/:token").get(confirmAccount);
-  authRouter.route("/login/").post(login);
-  authRouter.route("/forgot-password/").post(forgotPassword);
+  authRouter.route("/login").post(login);
+  authRouter.route("/forgot-password").post(forgotPassword);
   authRouter.route("/reset-password/:resetToken").post(resetPassword);
   // authRouter.route("/home");
   // authRouter.route("/admin/users/:token").get(getUsers);
