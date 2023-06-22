@@ -1,22 +1,33 @@
 // middleware/verifyAdmin.js
 // middleware/verifyAdmin.js
 const jwt = require("jsonwebtoken");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-module.exports = function (req, res, next) {
+module.exports = async (req, res, next) => {
   // Extract the token from the Authorization header
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  // const authHeader = req.headers["authorization"];
+  // const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) return res.status(401).send("Access Denied");
+  // if (!token) return res.status(401).send("Access Denied");
 
   try {
-    const verified = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    if (verified.isAdmin) {
-      next();
-    } else {
-      res.status(403).send("Unauthorized");
+    const user = req.user.id;
+    console.log(user);
+    const check = await prisma.user.findUnique({
+      where: {
+        id: user,
+      },
+    });
+    if (!check) {
+      throw new Error("no check");
     }
+    console.log(check);
+    if (!check.isAdmin) {
+      throw new Error("not authorized");
+    }
+    next();
   } catch (err) {
-    res.status(400).send("Invalid Token");
+    res.status(500).send({ mesage: err.mesage });
   }
 };
