@@ -30,6 +30,11 @@ const {
   editCollection,
   getCollection,
   listAllCollections,
+  createPurchase,
+  deletePurchase,
+  editPurchase,
+  getPurchase,
+  getAllPurchases,
 } = require("../controller/admin/adminShop-controller");
 const verifyAdmin = require("../middleware/verifyAdmin");
 const verifyConnected = require("../middleware/verifyConnected");
@@ -75,6 +80,14 @@ exports.router = (() => {
   adminRouter.route("/collections/:id").get(getCollection);
   adminRouter.route("/collections/:id").put(editCollection);
   adminRouter.route("/collections/:id").delete(deleteCollection);
+  //   Purchases routes
+
+  adminRouter.route("/purchases").get(getAllPurchases);
+  adminRouter.route("/purchases").post(createPurchase);
+  adminRouter.route("/purchases/:id").get(getPurchase);
+  adminRouter.route("/purchases/:id").put(editPurchase);
+  adminRouter.route("/purchases/:id").delete(deletePurchase);
+
   // adminRouter.route("/register/confirm/:token").get(confirmAccount);
   // authRouter.route("/home");
   // authRouter.route("/admin/users/:token").get(getUsers);
