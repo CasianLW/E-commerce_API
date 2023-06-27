@@ -19,7 +19,7 @@ model User {
   password String
   token String
 
-  avatar String?
+  avatar String? @db.VarChar(500)
   phone String
   city String
   location String
@@ -45,6 +45,7 @@ model Subscription {
   price              Float
   image              String               @default("https://www.placeholder.com/200/300")
   description        String
+  listItems          String
   stripeProductId    String?
   stripePriceId      String?
   interval           SubscriptionInterval @default(month)
@@ -68,10 +69,11 @@ enum SubscriptionInterval {
 model Event {
   id        Int     @id @default(autoincrement())
   title     String
-  content   String @db.VarChar(255) 
-  image String?
-  published Boolean @default(false)
+  content   String @db.VarChar(1000)
+  image String? @db.VarChar(500)
+  published Boolean @default(true)
   author  String
+  tendances Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
