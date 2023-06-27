@@ -226,10 +226,24 @@ module.exports = {
   //
   createSubscription: async (req, res) => {
     try {
-      const { name, description, image, interval, intervalCount, price } =
-        req.body;
+      const {
+        name,
+        description,
+        image,
+        interval,
+        intervalCount,
+        price,
+        listItems,
+      } = req.body;
 
-      if (!name || !description || !price || !interval || !intervalCount) {
+      if (
+        !name ||
+        !description ||
+        !price ||
+        !interval ||
+        !intervalCount ||
+        !listItems
+      ) {
         throw new Error("All fields are required");
       }
 
@@ -256,6 +270,7 @@ module.exports = {
           interval,
           intervalCount,
           price,
+          listItems,
           stripeProductId: product.id,
           stripePriceId: priceObj.id,
         },
@@ -530,6 +545,119 @@ module.exports = {
       return res.status(500).json({
         message: `Server error: ${error.message}`,
       });
+    }
+  },
+
+  // purchases crud
+  createPurchase: async (req, res) => {
+    try {
+      const { userId, stripeUserId, tokenSaas, price } = req.body;
+      const newPurchase = await prisma.purchase.create({
+        data: {
+          userId,
+          stripeUserId,
+          tokenSaas,
+          price,
+          status: "pending",
+        },
+      });
+      return res.status(201).json({
+        message: "Purchase created successfully",
+        purchase: newPurchase,
+      });
+    } catch (error) {
+      console.error("An error occurred during purchase creation: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  getAllPurchases: async (req, res) => {
+    try {
+      const purchases = await prisma.purchase.findMany();
+      return res.status(200).json({
+        message: "Purchases fetched successfully",
+        purchases,
+      });
+    } catch (error) {
+      console.error("An error occurred while fetching purchases: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  getPurchase: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const purchase = await prisma.purchase.findUnique({
+        where: { id: Number(id) },
+      });
+      if (!purchase) throw new Error("Purchase not found");
+      return res.status(200).json({
+        message: "Purchase fetched successfully",
+        purchase,
+      });
+    } catch (error) {
+      console.error("An error occurred while fetching purchase: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  editPurchase: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { userId, stripeUserId, tokenSaas, price, status } = req.body;
+      const purchase = await prisma.purchase.update({
+        where: { id: Number(id) },
+        data: {
+          userId,
+          stripeUserId,
+          tokenSaas,
+          price,
+          status,
+        },
+      });
+      return res.status(200).json({
+        message: "Purchase updated successfully",
+        purchase,
+      });
+    } catch (error) {
+      console.error("An error occurred while updating purchase: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
+  deletePurchase: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const purchase = await prisma.purchase.delete({
+        where: { id: Number(id) },
+      });
+      return res.status(200).json({
+        message: "Purchase deleted successfully",
+        purchase,
+      });
+    } catch (error) {
+      console.error("An error occurred during purchase deletion: ", error);
+      return res.status(500).json({
+        message: `Server error: ${error.message}`,
+      });
+    } finally {
+      await prisma.$disconnect();
     }
   },
 };
