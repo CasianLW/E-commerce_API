@@ -9,6 +9,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const bodyParser = require("body-parser");
 const https = require("https");
+const cookieParser = require("cookie-parser");
 
 const verifyConnected = require("./middleware/verifyConnected");
 
@@ -18,9 +19,26 @@ const stripe = require("stripe")(process.env.VITE_APP_STRIPE_API_SECRET); // Add
 //   key: fs.readFileSync("./server/localhost-key.pem"),
 //   cert: fs.readFileSync("./server/localhost.pem"),
 // };
+// console.log("CLIENT_URL:", process.env.CLIENT_URL);
+
+app.use(cookieParser());
+const corsOptions = {
+  origin: [
+    `${process.env.CLIENT_URL}`,
+    `${process.env.ADMIN_URL}`,
+    "http://localhost:8100",
+  ],
+  // origin: "*",
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 
 app.use(compression());
-app.use(cors());
+// app.use(cors());
 app.use(async (req, res, next) => {
   req.prisma = prisma;
   next();
@@ -29,16 +47,19 @@ app.use(async (req, res, next) => {
 const AuthRouter = require("./router/AuthRouter").router;
 const AdminRouter = require("./router/AdminRouter").router;
 const ProfilRouter = require("./router/ProfilRouter").router;
+const StoreRouter = require("./router/StoreRouter").router;
+
 // const StoreRouter = require("./router/StoreRouter").router;
 // const ProfileRouter = require("./router/ProfileRouter").router;
 
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 // app.use('/api', (req, res) => {
 //     res.send('Hello to Yuniq store Api !')
 // })
-app.use("/api/profil", ProfilRouter);
-app.use("/api/auth", AuthRouter);
-app.use("/api/admin", AdminRouter);
+app.use("/api/profil", bodyParser.json(), ProfilRouter);
+app.use("/api/auth", bodyParser.json(), AuthRouter);
+app.use("/api/admin", bodyParser.json(), AdminRouter);
+app.use("/api/store", StoreRouter);
 // app.use("/api/admin", AdminRouter);
 
 // stripe checkout endpoint
