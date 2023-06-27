@@ -17,7 +17,7 @@ module.exports = {
   //
   createEvent: async (req, res) => {
     try {
-      const { title, content, image, author } = req.body;
+      const { title, content, image, author, published, tendances } = req.body;
       // Error management
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
@@ -37,7 +37,8 @@ module.exports = {
           content: content,
           image: image, // it's optional
           author: author,
-          published: false, // default value
+          published: published, // default value
+          tendances: tendances,
         },
       });
 
