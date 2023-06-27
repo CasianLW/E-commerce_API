@@ -30,9 +30,9 @@ async function createCheckoutSession(req, res) {
       },
     ],
     mode: "subscription",
-    success_url: `${YOUR_DOMAIN}/checkout/?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${YOUR_DOMAIN}/checkout/success/?success=true&session_id={CHECKOUT_SESSION_ID}`,
     // cancel_url: `${YOUR_DOMAIN}/checkout/?canceled=true`,
-    cancel_url: `${YOUR_DOMAIN}`,
+    cancel_url: `${YOUR_DOMAIN}/checkout/failed/?success=false&session_id={CHECKOUT_SESSION_ID}`,
   });
 
   //   res.redirect(303, session.url);
@@ -158,14 +158,22 @@ async function handleWebhook(request, response) {
             stripeUserId: customerId,
             status: "paid",
             invoiceUrl: invoice.hosted_invoice_url,
-            tokenSaas: event.data.object.plan.product, // Replace this with the real tokenSaas value
+            tokenSaas: event.data.object.subscription,
           },
         });
+        const localSubscription = await prisma.subscription.findFirst({
+          where: { stripeProductId: event.data.object.subscription },
+        });
+
         // Then, update the user in the local database
         const updatedUser = await prisma.user.update({
           where: { email: customerEmail },
           data: {
-            subscription: await prisma.subscription where {stripeProductId : event.data.object.plan.product}
+            subscription: {
+              connect: {
+                id: localSubscription.id,
+              },
+            },
           },
         });
 
