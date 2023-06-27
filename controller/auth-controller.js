@@ -219,6 +219,7 @@ module.exports = {
                       padding: 20px;
                       margin-top: 20px;
                       border-radius: 20px;
+                      color:white;
                     }
                   </style>
                 </head>
@@ -295,6 +296,7 @@ module.exports = {
         console.log(token);
         return res.status(200).json({
           token,
+          user: existingUser,
         });
       } else {
         throw new Error("Invalid user");
@@ -383,6 +385,7 @@ module.exports = {
                       padding: 20px;
                       margin-top: 20px;
                       border-radius: 20px;
+                      color: #000;
                   }
                   </style>
                   </head>
