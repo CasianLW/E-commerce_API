@@ -28,6 +28,7 @@ const corsOptions = {
     `${process.env.ADMIN_URL}`,
     "http://localhost:8100",
     "https://tubular-cajeta-6a6a49.netlify.app",
+    "https://649b718f2568a208c970d935--tubular-cajeta-6a6a49.netlify.app",
   ],
   // origin: "*",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
