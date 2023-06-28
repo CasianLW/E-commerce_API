@@ -476,4 +476,43 @@ module.exports = {
       await prisma.$disconnect();
     }
   },
+  sendEmail: async (req, res) => {
+    const { name, email, content } = req.body;
+
+    try {
+      if (!name || !email || !content) {
+        throw new Error(
+          "Please provide name, email and content in your request."
+        );
+      }
+
+      SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
+        process.env.SENDINBLUE_API_KEY;
+      let emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+      let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.sender = { email, name };
+      sendSmtpEmail.to = [{ email: process.env.CONTACT_FORM_MAIL }];
+      sendSmtpEmail.subject = "Contact form message";
+      sendSmtpEmail.htmlContent = `
+        <p>Name: ${name}</p>
+        <p>Email: ${email}</p>
+        <p>Content: ${content}</p>
+      `;
+
+      emailApi.sendTransacEmail(sendSmtpEmail).then(
+        function (data) {
+          console.log("API called successfully. Returned data: " + data);
+          res.status(200).json({ message: "Email sent successfully." });
+        },
+        function (error) {
+          console.error(error);
+          res.status(500).json({ message: "Failed to send email." });
+        }
+      );
+    } catch (error) {
+      console.error("An error occurred while sending an email: ", error);
+      res.status(500).json({ message: `Server error: ${error.message}` });
+    }
+  },
 };
