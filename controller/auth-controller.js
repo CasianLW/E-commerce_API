@@ -396,7 +396,7 @@ module.exports = {
                       </div>
                       <div class="message">
                       <p>You recently requested to reset your password. Click the link below to reset it. (Expires in 10 minutes)</p>
-                      <a href="${process.env.PATH_TO_RESET_PASSWORD}/?${resetPasswordToken}">Reset your password</a>
+                      <a href="${process.env.CLIENT_URL}/forgot-password/${resetPasswordToken}">Reset your password</a>
                       </div>
                   </div>
                   </body>
