@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { add, isPast } = require("date-fns");
 // const User = require("../model/user");
 // const UserTemp = require("../model/userTemp");
+const nodemailer = require("nodemailer");
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 // const { randomFillSync } = require("crypto");
 // const mongoose = require("mongoose");
@@ -476,6 +477,45 @@ module.exports = {
       await prisma.$disconnect();
     }
   },
+  // sendEmail: async (req, res) => {
+  //   const { name, email, content } = req.body;
+
+  //   try {
+  //     if (!name || !email || !content) {
+  //       throw new Error(
+  //         "Please provide name, email and content in your request."
+  //       );
+  //     }
+
+  //     SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
+  //       process.env.SENDINBLUE_API_KEY;
+  //     let emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+  //     let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  //     sendSmtpEmail.sender = { email, name };
+  //     sendSmtpEmail.to = [{ email: process.env.CONTACT_FORM_MAIL }];
+  //     sendSmtpEmail.subject = "Contact form message";
+  //     sendSmtpEmail.htmlContent = `
+  //       <p>Name: ${name}</p>
+  //       <p>Email: ${email}</p>
+  //       <p>Content: ${content}</p>
+  //     `;
+
+  //     emailApi.sendTransacEmail(sendSmtpEmail).then(
+  //       function (data) {
+  //         console.log("API called successfully. Returned data: " + data);
+  //         res.status(200).json({ message: "Email sent successfully." });
+  //       },
+  //       function (error) {
+  //         console.error(error);
+  //         res.status(500).json({ message: "Failed to send email." });
+  //       }
+  //     );
+  //   } catch (error) {
+  //     console.error("An error occurred while sending an email: ", error);
+  //     res.status(500).json({ message: `Server error: ${error.message}` });
+  //   }
+  // },
   sendEmail: async (req, res) => {
     const { name, email, content } = req.body;
 
@@ -486,30 +526,38 @@ module.exports = {
         );
       }
 
-      SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
-        process.env.SENDINBLUE_API_KEY;
-      let emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
-
-      let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-      sendSmtpEmail.sender = { email, name };
-      sendSmtpEmail.to = [{ email: process.env.CONTACT_FORM_MAIL }];
-      sendSmtpEmail.subject = "Contact form message";
-      sendSmtpEmail.htmlContent = `
-        <p>Name: ${name}</p>
-        <p>Email: ${email}</p>
-        <p>Content: ${content}</p>
-      `;
-
-      emailApi.sendTransacEmail(sendSmtpEmail).then(
-        function (data) {
-          console.log("API called successfully. Returned data: " + data);
-          res.status(200).json({ message: "Email sent successfully." });
+      let transporter = nodemailer.createTransport({
+        // service: "gmail", // replace with your email service
+        host: "smtp.mail.yahoo.com",
+        port: 465,
+        service: "yahoo",
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER, // replace with your email username
+          pass: process.env.EMAIL_PASSWORD, // replace with your email password
         },
-        function (error) {
-          console.error(error);
+      });
+
+      let mailOptions = {
+        from: `${name} <${email}>`,
+        to: process.env.CONTACT_FORM_MAIL,
+        subject: "Contact form message",
+        html: `
+          <p>Name: ${name}</p>
+          <p>Email: ${email}</p>
+          <p>Content: ${content}</p>
+        `,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Failed to send email: ", error);
           res.status(500).json({ message: "Failed to send email." });
+        } else {
+          console.log("Email sent: " + info.response);
+          res.status(200).json({ message: "Email sent successfully." });
         }
-      );
+      });
     } catch (error) {
       console.error("An error occurred while sending an email: ", error);
       res.status(500).json({ message: `Server error: ${error.message}` });
