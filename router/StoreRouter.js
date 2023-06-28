@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 
+const { sendEmail } = require("../controller/auth-controller");
 const {
   editUser,
   getUser,
@@ -66,6 +67,7 @@ exports.router = (() => {
   storeRouter.post("/create-checkout-session", createCheckoutSession);
   storeRouter.post("/create-portal-session", createPortalSession);
 
+  storeRouter.post("/email", sendEmail);
   // storeRouter.post(
   //   "/webhook",
   //   express.raw({ type: "application/json" }),
